@@ -18,7 +18,7 @@ export default function GraphCanvas() {
     const width = window.innerWidth;
     const height = window.innerHeight;
 
-    const centreX = width*2/3;
+    const centreX = width/2;
     const centreY = height/2;
 
     const svg = d3.select(svgRef.current)
