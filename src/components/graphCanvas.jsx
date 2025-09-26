@@ -11,7 +11,8 @@ export default function GraphCanvas() {
     // let currentCenter = 0; // nodo iniziale
     const [currentCenter, setCurrentCenter] = useState(0); // nodo iniziale
 //   let depth = 3;
-    const [depth, setDepth] = useState(1);
+    //const [depth, setDepth] = useState(1);
+    const [levelFilter, setLevelFilter] = useState(1); // livello iniziale
 
   useEffect(() => {
     d3.select(svgRef.current).selectAll("*").remove();
@@ -26,10 +27,30 @@ export default function GraphCanvas() {
       .attr("height", height)
       .style("background-color", "#ffffffff");;
 
+    const mainG = svg.append("g").attr("class", "zoom-content");
+
+    // pan solo (scala fissa)
+    const zoom = d3.zoom()
+    .scaleExtent([1, 1]) // blocca lo zoom
+    .on("zoom", (event) => {
+        mainG.attr("transform", event.transform);
+    });
+
+    // evita conflitto con drag dei nodi
+    zoom.filter((event) => {
+    const tag = event.target.tagName;
+    if (tag && tag.toLowerCase() === "circle") return false;
+    return !event.ctrlKey && event.type !== "dblclick";
+    });
+
+    svg.call(zoom);
+
     const nodes_total = JSON.parse(JSON.stringify(graphData.nodes));
     const links_total = JSON.parse(JSON.stringify(graphData.links));
 
-    const subgraph = getSubgraph(currentCenter, depth, nodes_total, links_total);
+    //const subgraph = getSubgraph(currentCenter, depth, nodes_total, links_total);
+    //const levelFilter = 1;
+    const subgraph = getGraphByLevel(currentCenter, levelFilter, nodes_total, links_total);
 
     subgraph.nodes.forEach(node => {
     if (node.x === undefined || node.y === undefined) {
@@ -56,7 +77,7 @@ export default function GraphCanvas() {
     const simulation = createForceLayout(nodes, links, centreX, centreY, currentCenter);
 
     // Add a line for each link, and a circle for each node.
-    const link = svg.append("g")
+    const link = mainG.append("g")
         .attr("stroke", "#000000ff")
         .attr("stroke-opacity", 0.5)
         .selectAll("line")
@@ -65,14 +86,21 @@ export default function GraphCanvas() {
         // .attr("stroke-width", d => Math.sqrt(d.value));
         .attr("stroke-width", 0.2);
 
-    const node = svg.append("g")
+    const levelColors = {
+        1: "#1f77b4",
+        2: "#ff7f0e",
+        3: "#2ca02c",
+        4: "#d62728",
+        5: "#9467bd"
+    };
+    const node = mainG.append("g")
         .attr("stroke", "#fff")
         .attr("stroke-width", 1)
         .selectAll("circle")
         .data(nodes)
         .join("circle")
         .attr("r", d => sizeScale(d.connections))
-        .attr("fill", d => color(d.group))
+        .attr("fill", d => levelColors[d.level] || "#ccc")
         .on("click", (event, d) => {
         setCurrentCenter(d.id); // aggiorna stato React
       })
@@ -89,7 +117,7 @@ export default function GraphCanvas() {
     });
 
     // Disegna i nomi dei nodi
-    const labels = svg.selectAll("text")
+    const labels = mainG.selectAll("text")
         .data(subgraph.nodes)
         .enter()
         .append("text")
@@ -119,7 +147,7 @@ export default function GraphCanvas() {
         node
             .attr("cx", d => d.x)
             .attr("cy", d => d.y)
-            .attr("fill", d => d.id === currentCenter ? "#FF4063" : "#000000ff");
+            // .attr("fill", d => d.id === currentCenter ? "#FF4063" : "#000000ff");
 
         labels
             .attr("x", d => d.x + 10)
@@ -162,10 +190,13 @@ export default function GraphCanvas() {
             for (const link of links) {
                 if (link.source === id || link.target === id) {
                 const neighbor = link.source === id ? link.target : link.source;
-                resultLinks.push(link);
-                if (!visited.has(neighbor)) {
+                // controlla il campo level del nodo vicino
+                if (nodes[neighbor]?.level === 2) {
+                    resultLinks.push(link);
+                    if (!visited.has(neighbor)) {
                     visited.add(neighbor);
                     queue.push({ id: neighbor, level: level + 1 });
+                    }
                 }
                 }
             }
@@ -174,16 +205,34 @@ export default function GraphCanvas() {
         return { nodes: resultNodes, links: resultLinks };
         }
 
+    function getGraphByLevel(centerId, levelFilter, nodes, links) {
+        // Se nodes è un array, togli Object.values()
+        const allNodes = Object.values(nodes);
 
+        // 1. prendi i nodi che hanno quel livello
+        const filteredNodes = allNodes.filter(n => n.level === levelFilter);
 
-    // // Zoom behavior
-    // const zoom = d3.zoom().on("zoom", (event) => {
-    //   svg.selectAll("circle").attr("transform", event.transform);
-    // });
+        // 2. assicurati che il nodo centrale sia incluso anche se non ha quel livello
+        const centerNode = nodes[centerId];
+        if (centerNode && !filteredNodes.some(n => n.id === centerId)) {
+            filteredNodes.push(centerNode);
+        }
+
+        // 3. crea un set di id dei nodi inclusi
+        const nodeIds = new Set(filteredNodes.map(n => n.id));
+
+        // 4. prendi i link che collegano nodi inclusi
+        const filteredLinks = links.filter(
+            l => nodeIds.has(l.source) && nodeIds.has(l.target)
+        );
+
+        return { nodes: filteredNodes, links: filteredLinks };
+        }
+
 
     // svg.call(zoom);
     return () => simulation.stop();
-  }, [currentCenter, depth, svgRef.current]);
+  }, [currentCenter, levelFilter, svgRef.current]);
 
 //   return <svg ref={svgRef}></svg>;
     return (
@@ -198,7 +247,7 @@ export default function GraphCanvas() {
             style={{
             position: "absolute",
             bottom: "100px",   // distanza dal fondo
-            left: "66.6%",
+            left: "50%",
             transform: "translateX(-50%)",
             width: "200px",
             background: "transparent",
@@ -206,6 +255,23 @@ export default function GraphCanvas() {
             cursor: "pointer",
             }}
         /> */}
+        <input
+            type="range"
+            min={1}
+            max={5}              // livello da 1 a 5
+            value={levelFilter}
+            onChange={e => setLevelFilter(Number(e.target.value))}
+            style={{
+                position: "absolute",
+                bottom: "100px",
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: "200px",
+                background: "transparent",
+                accentColor: "#69b3a2",
+                cursor: "pointer",
+            }}
+        />
         </div>
     );
 }

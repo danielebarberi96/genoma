@@ -5,11 +5,25 @@ const n = 5000;  // numero di nodi
 const k = 30;    // ogni nodo collegato ai k vicini
 const p = 0.05;  // probabilità di rewiring
 
+const probabilities = [0.5, 0.25, 0.15, 0.07, 0.03]; // somma = 1
+// 1=50%, 2=25%, 3=15%, 4=7%, 5=3%
+
+function getRandomLevel() {
+  const r = Math.random();
+  let cumulative = 0;
+  for (let i = 0; i < probabilities.length; i++) {
+    cumulative += probabilities[i];
+    if (r < cumulative) return i + 1; // i+1 = livello
+  }
+  return probabilities.length; // fallback, livello 5
+}
+
 // Inizializza nodi
 const nodes = Array.from({ length: n }, (_, i) => ({
   id: i,
   name: `User_${i}`,
-  connections: 0
+  connections: 0,
+  level: getRandomLevel()
 }));
 
 // Array per i link
