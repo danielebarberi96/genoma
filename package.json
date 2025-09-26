@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://danielebarberi96.github.io/",
+  "homepage": "https://danielebarberi96.github.io/genoma/",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
