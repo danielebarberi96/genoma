@@ -2,7 +2,7 @@ import * as fs from "fs";
 
 // Parametri WS
 const n = 5000;  // numero di nodi
-const k = 100;    // ogni nodo collegato ai k vicini
+const k = 30;    // ogni nodo collegato ai k vicini
 const p = 0.05;  // probabilità di rewiring
 
 // Inizializza nodi
@@ -57,6 +57,6 @@ for (let i = 0; i < n; i++) {
 
 // Salva su file
 const graph = { nodes, links };
-fs.writeFileSync('graph_ws_100.json', JSON.stringify(graph, null, 2));
+fs.writeFileSync('graph_ws_30.json', JSON.stringify(graph, null, 2));
 
 console.log(`Grafo WS generato con ${n} nodi e ${links.length} collegamenti`);

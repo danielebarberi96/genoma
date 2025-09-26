@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Application, Color, Graphics, Container} from "pixi.js";
 import { createForceLayout } from "../utils/forceLayout";
-import graphData from "../data/graph_ws_100.json";
+import graphData from "../data/graph_ws_30.json";
 import * as d3 from "d3";
 
 export default function GraphCanvas() {
@@ -57,7 +57,7 @@ export default function GraphCanvas() {
 
     // Add a line for each link, and a circle for each node.
     const link = svg.append("g")
-        .attr("stroke", "#636363ff")
+        .attr("stroke", "#000000ff")
         .attr("stroke-opacity", 0.5)
         .selectAll("line")
         .data(links)
@@ -119,7 +119,7 @@ export default function GraphCanvas() {
         node
             .attr("cx", d => d.x)
             .attr("cy", d => d.y)
-            .attr("fill", d => d.id === currentCenter ? "red" : "#555555ff");
+            .attr("fill", d => d.id === currentCenter ? "#FF4063" : "#000000ff");
 
         labels
             .attr("x", d => d.x + 10)
@@ -189,7 +189,7 @@ export default function GraphCanvas() {
     return (
         <div style={{ position: "relative"}}>
         <svg ref={svgRef}></svg>
-        <input
+        {/* <input
             type="range"
             min={1}
             max={3}
@@ -205,7 +205,7 @@ export default function GraphCanvas() {
             accentColor: "#69b3a2", // colore della track in Chrome
             cursor: "pointer",
             }}
-        />
+        /> */}
         </div>
     );
 }
